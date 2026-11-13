@@ -43,8 +43,16 @@ init_cflags += \
 
 # --
 
-# Do not build this even with mmma if we're system-as-root, otherwise it will overwrite the symlink.
-ifneq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE),true)
+# A legacy bootloader may still require first-stage init in a boot ramdisk
+# even when the mounted system filesystem includes the root directory.
+init_needs_first_stage := true
+ifeq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE),true)
+ifneq ($(BOARD_INCLUDE_BOOT_RAMDISK),true)
+init_needs_first_stage := false
+endif
+endif
+
+ifeq ($(init_needs_first_stage),true)
 include $(CLEAR_VARS)
 LOCAL_CPPFLAGS := $(init_cflags)
 LOCAL_SRC_FILES := \
@@ -131,7 +139,7 @@ include $(BUILD_PHONY_PACKAGE)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE := init_vendor
-ifneq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE),true)
+ifeq ($(init_needs_first_stage),true)
 LOCAL_REQUIRED_MODULES := \
    init_first_stage \
 

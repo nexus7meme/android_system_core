@@ -87,16 +87,17 @@ static pid_t get_tracer(pid_t tracee) {
 // Attach to a thread, and verify that it's still a member of the given process
 static bool ptrace_seize_thread(int pid_proc_fd, pid_t tid, std::string* error, int flags = 0) {
   if (ptrace(PTRACE_SEIZE, tid, 0, flags) != 0) {
-    if (errno == EPERM) {
+    const int attach_errno = errno;
+    if (attach_errno == EPERM) {
       pid_t tracer = get_tracer(tid);
-      if (tracer != -1) {
+      if (tracer > 0) {
         *error = StringPrintf("failed to attach to thread %d, already traced by %d (%s)", tid,
                               tracer, get_process_name(tracer).c_str());
         return false;
       }
     }
 
-    *error = StringPrintf("failed to attach to thread %d: %s", tid, strerror(errno));
+    *error = StringPrintf("failed to attach to thread %d: %s", tid, strerror(attach_errno));
     return false;
   }
 

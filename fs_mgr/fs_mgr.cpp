@@ -2013,15 +2013,21 @@ bool fs_mgr_swapon_all(const Fstab& fstab) {
             // device.  There is no point in having multiple zram devices
             // on a system (all the memory comes from the same pool) so
             // we can assume the device number is 0.
-            if (entry.max_comp_streams >= 0) {
+            // Zero is the fstab default: retain the kernel's stream count.
+            if (entry.max_comp_streams > 0) {
                 auto zram_mcs_fp = std::unique_ptr<FILE, decltype(&fclose)>{
-                        fopen(ZRAM_CONF_MCS, "re"), fclose};
+                        fopen(ZRAM_CONF_MCS, "we"), fclose};
                 if (zram_mcs_fp == nullptr) {
                     LERROR << "Unable to open zram conf comp device " << ZRAM_CONF_MCS;
                     ret = false;
                     continue;
                 }
-                fprintf(zram_mcs_fp.get(), "%d\n", entry.max_comp_streams);
+                if (fprintf(zram_mcs_fp.get(), "%d\n", entry.max_comp_streams) < 0 ||
+                    fflush(zram_mcs_fp.get()) != 0) {
+                    PERROR << "Unable to set zram compression streams";
+                    ret = false;
+                    continue;
+                }
             }
 
             auto zram_fp =

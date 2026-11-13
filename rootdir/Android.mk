@@ -135,7 +135,9 @@ endif
 
 # The init symlink must be a post install command of a file that is to TARGET_ROOT_OUT.
 # Since init.environ.rc is required for init and satisfies that requirement, we hijack it to create the symlink.
+ifneq ($(BOARD_INCLUDE_BOOT_RAMDISK),true)
 LOCAL_POST_INSTALL_CMD += ; ln -sf /system/bin/init $(TARGET_ROOT_OUT)/init
+endif
 
 include $(BUILD_SYSTEM)/base_rules.mk
 
